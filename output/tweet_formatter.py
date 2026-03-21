@@ -2,7 +2,8 @@ import logging
 from datetime import date
 from pathlib import Path
 
-import anthropic
+from google import genai
+from google.genai import types
 
 import config
 from summarizer.prompts import SYSTEM_PROMPT, TWEET_PROMPT
@@ -18,8 +19,8 @@ def generate_tweet_drafts(summarized: list[dict], target_date: date | None = Non
     # 上位5件のみツイート案を作成
     top_articles = summarized[:5]
 
-    if config.ANTHROPIC_API_KEY:
-        tweets = _generate_with_claude(top_articles)
+    if config.GEMINI_API_KEY:
+        tweets = _generate_with_gemini(top_articles)
     else:
         tweets = _generate_simple(top_articles)
 
@@ -45,9 +46,9 @@ def generate_tweet_drafts(summarized: list[dict], target_date: date | None = Non
     return path
 
 
-def _generate_with_claude(articles: list[dict]) -> list[str]:
-    """Claude APIでツイート案を生成."""
-    client = anthropic.Anthropic(api_key=config.ANTHROPIC_API_KEY)
+def _generate_with_gemini(articles: list[dict]) -> list[str]:
+    """Gemini APIでツイート案を生成."""
+    client = genai.Client(api_key=config.GEMINI_API_KEY)
     tweets = []
 
     for item in articles:
@@ -60,13 +61,15 @@ def _generate_with_claude(articles: list[dict]) -> list[str]:
         prompt = TWEET_PROMPT.format(summary=f"{title}\n{summary}")
 
         try:
-            response = client.messages.create(
-                model=config.CLAUDE_MODEL,
-                max_tokens=256,
-                system=SYSTEM_PROMPT,
-                messages=[{"role": "user", "content": prompt}],
+            response = client.models.generate_content(
+                model=config.GEMINI_MODEL,
+                contents=prompt,
+                config=types.GenerateContentConfig(
+                    system_instruction=SYSTEM_PROMPT,
+                    max_output_tokens=256,
+                ),
             )
-            tweet = response.content[0].text.strip()
+            tweet = response.text.strip()
             tweets.append(tweet)
         except Exception as e:
             logger.warning(f"Tweet generation failed: {e}")

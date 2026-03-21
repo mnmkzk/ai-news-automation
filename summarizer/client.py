@@ -1,7 +1,8 @@
 import logging
 import re
 
-import anthropic
+from google import genai
+from google.genai import types
 
 import config
 from collectors.base import Article
@@ -31,12 +32,20 @@ def _build_articles_text(articles: list[Article]) -> str:
     return "\n\n".join(parts)
 
 
+def _clean_field(text: str) -> str:
+    """フィールド値から末尾のMarkdown記号や余分な空白を除去."""
+    # 末尾の ###, ---, ** などを除去
+    text = re.sub(r"[\n\r]+[\s#\-*]+$", "", text.strip())
+    return text.strip()
+
+
 def _parse_batch_response(text: str, articles: list[Article]) -> list[dict]:
-    """Claude応答をパースして記事ごとの要約に分割."""
+    """Gemini応答をパースして記事ごとの要約に分割."""
     results = []
     # 「---記事N---」で分割
     sections = re.split(r"---記事\d+---", text)
-    sections = [s.strip() for s in sections if s.strip()]
+    # 【...】マーカーを含まないセクション（前置きテキスト等）は除外
+    sections = [s.strip() for s in sections if s.strip() and "【" in s]
 
     for i, section in enumerate(sections):
         article = articles[i] if i < len(articles) else None
@@ -49,23 +58,35 @@ def _parse_batch_response(text: str, articles: list[Article]) -> list[dict]:
 
         results.append({
             "article": article.to_dict() if article else {},
-            "summary_title": title_match.group(1).strip() if title_match else "",
-            "what_is_this": what_match.group(1).strip() if what_match else "",
-            "why_amazing": why_match.group(1).strip() if why_match else "",
-            "how_changes_life": how_match.group(1).strip() if how_match else "",
+            "summary_title": _clean_field(title_match.group(1)) if title_match else "",
+            "what_is_this": _clean_field(what_match.group(1)) if what_match else "",
+            "why_amazing": _clean_field(why_match.group(1)) if why_match else "",
+            "how_changes_life": _clean_field(how_match.group(1)) if how_match else "",
             "raw_summary": section,
+        })
+
+    # パース結果が記事数より少ない場合、不足分をフォールバックで補完
+    for j in range(len(results), len(articles)):
+        results.append({
+            "article": articles[j].to_dict(),
+            "summary_title": "",
+            "what_is_this": "",
+            "why_amazing": "",
+            "how_changes_life": "",
+            "raw_summary": "",
         })
 
     return results
 
 
 def summarize_batch(articles: list[Article]) -> list[dict]:
-    """記事をバッチでClaudeに送信して要約を取得."""
-    if not config.ANTHROPIC_API_KEY:
-        logger.error("ANTHROPIC_API_KEY is not set")
+    """記事をバッチでGeminiに送信して要約を取得."""
+    if not config.GEMINI_API_KEY:
+        logger.error("GEMINI_API_KEY is not set")
         return [{"article": a.to_dict(), "summary": "(no API key)"} for a in articles]
 
-    client = anthropic.Anthropic(api_key=config.ANTHROPIC_API_KEY)
+    client = genai.Client(api_key=config.GEMINI_API_KEY)
+
     all_results = []
 
     # 5記事ずつバッチ処理
@@ -81,25 +102,31 @@ def summarize_batch(articles: list[Article]) -> list[dict]:
         )
 
         try:
-            logger.info(f"Sending batch {i // batch_size + 1} ({len(batch)} articles) to Claude...")
-            response = client.messages.create(
-                model=config.CLAUDE_MODEL,
-                max_tokens=config.CLAUDE_MAX_TOKENS,
-                system=SYSTEM_PROMPT,
-                messages=[{"role": "user", "content": prompt}],
+            logger.info(f"Sending batch {i // batch_size + 1} ({len(batch)} articles) to Gemini...")
+            response = client.models.generate_content(
+                model=config.GEMINI_MODEL,
+                contents=prompt,
+                config=types.GenerateContentConfig(
+                    system_instruction=SYSTEM_PROMPT,
+                    max_output_tokens=config.GEMINI_MAX_TOKENS,
+                ),
             )
 
-            response_text = response.content[0].text
+            response_text = response.text
             parsed = _parse_batch_response(response_text, batch)
             all_results.extend(parsed)
 
-            logger.info(
-                f"  -> Tokens: {response.usage.input_tokens} in / "
-                f"{response.usage.output_tokens} out"
-            )
+            try:
+                usage = response.usage_metadata
+                logger.info(
+                    f"  -> Tokens: {usage.prompt_token_count} in / "
+                    f"{usage.candidates_token_count} out"
+                )
+            except AttributeError:
+                pass
 
         except Exception as e:
-            logger.error(f"Claude API error: {e}")
+            logger.error(f"Gemini API error: {e}")
             for a in batch:
                 all_results.append({"article": a.to_dict(), "summary": f"(error: {e})"})
 

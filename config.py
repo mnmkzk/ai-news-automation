@@ -7,16 +7,16 @@ load_dotenv()
 # --- Paths ---
 BASE_DIR = Path(__file__).parent
 DATA_DIR = BASE_DIR / "data"
-REPORTS_DIR = BASE_DIR / "reports"
+REPORTS_DIR = BASE_DIR.parent.parent / "reports"
 DATA_DIR.mkdir(exist_ok=True)
 REPORTS_DIR.mkdir(exist_ok=True)
 
 # --- API Keys ---
-ANTHROPIC_API_KEY = os.getenv("ANTHROPIC_API_KEY", "")
+GEMINI_API_KEY = os.getenv("GEMINI_API_KEY", "")
 
-# --- Claude Settings ---
-CLAUDE_MODEL = "claude-sonnet-4-20250514"
-CLAUDE_MAX_TOKENS = 4096
+# --- Gemini Settings ---
+GEMINI_MODEL = "gemini-2.5-flash"
+GEMINI_MAX_TOKENS = 4096
 MAX_ARTICLES_PER_SOURCE = 10
 MAX_ARTICLES_TO_SUMMARIZE = 15
 
