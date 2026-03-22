@@ -31,7 +31,6 @@ ENV/
 
 # Generated data (runtime)
 data/
-reports/
 
 # OS
 .DS_Store

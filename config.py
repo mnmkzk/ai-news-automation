@@ -7,7 +7,8 @@ load_dotenv()
 # --- Paths ---
 BASE_DIR = Path(__file__).parent
 DATA_DIR = BASE_DIR / "data"
-REPORTS_DIR = BASE_DIR.parent.parent / "reports"
+_reports_env = os.getenv("REPORTS_DIR")
+REPORTS_DIR = Path(_reports_env) if _reports_env else BASE_DIR.parent.parent / "reports"
 DATA_DIR.mkdir(exist_ok=True)
 REPORTS_DIR.mkdir(exist_ok=True)
 
