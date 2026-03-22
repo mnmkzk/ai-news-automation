@@ -75,9 +75,6 @@ def generate_note_report(summarized: list[dict], target_date: date | None = None
         lines.append("---")
         lines.append("")
 
-    # フッター
-    lines.append("*このまとめは ANA (AI News Automation) により自動生成されました。*")
-
     content = "\n".join(lines)
     filename = f"ana_report_{d.strftime('%Y%m%d')}.md"
     path = config.REPORTS_DIR / filename
