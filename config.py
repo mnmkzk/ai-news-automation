@@ -18,7 +18,27 @@ GEMINI_API_KEY = os.getenv("GEMINI_API_KEY", "")
 GEMINI_MODEL = "gemini-2.5-flash"
 GEMINI_MAX_TOKENS = 4096
 MAX_ARTICLES_PER_SOURCE = 10
-MAX_ARTICLES_TO_SUMMARIZE = 15
+MAX_FILTER_CANDIDATES = 15      # ルールフィルタ後にGeminiに渡す候補数
+MAX_ARTICLES_TO_SUMMARIZE = 5   # Gemini選定後に要約する最終件数
+
+# --- Article Selection ---
+TWITTER_ACCOUNT_WEIGHTS = {
+    "masahirochaen": 6,
+    "kensuu": 5,
+    "kajiken0630": 5,
+    "rimojun": 4,
+}
+
+CROSS_SOURCE_TOPICS = [
+    "openai", "gpt-5", "gpt-4", "chatgpt",
+    "anthropic", "claude",
+    "google", "gemini", "deepmind",
+    "meta", "llama",
+    "microsoft", "copilot",
+    "sora", "dall-e",
+    "deepseek", "perplexity", "mistral",
+    "nvidia", "groq",
+]
 
 # --- RSS Feeds ---
 RSS_FEEDS = {

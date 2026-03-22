@@ -52,7 +52,7 @@ def _parse_batch_response(text: str, articles: list[Article]) -> list[dict]:
 
         # 各セクションを抽出
         title_match = re.search(r"【タイトル】(.+?)(?=\n【|$)", section, re.DOTALL)
-        what_match = re.search(r"【これ、なに？】(.+?)(?=\n【|$)", section, re.DOTALL)
+        what_match = re.search(r"【ニュース要約】(.+?)(?=\n【|$)", section, re.DOTALL)
         why_match = re.search(r"【何がすごいの？】(.+?)(?=\n【|$)", section, re.DOTALL)
         how_match = re.search(r"【あなたの生活・仕事はどう変わる？】(.+?)(?=\n【|$)", section, re.DOTALL)
 

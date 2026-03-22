@@ -48,18 +48,24 @@ def collect_all() -> list:
 
 
 def summarize_articles(articles: list, dry_run: bool = False) -> list[dict]:
-    """Phase 2: Filter and summarize with Claude."""
+    """Phase 2: Filter, select, and summarize."""
     from summarizer.filter import filter_and_deduplicate
+    from summarizer.selector import select_top_articles
     from summarizer.client import summarize_batch
 
-    filtered = filter_and_deduplicate(articles)
-    logger.info(f"Filtered to {len(filtered)} articles for summarization")
+    # ルールベースで候補を絞り込み（最大15件）
+    candidates = filter_and_deduplicate(articles)
+    logger.info(f"Rule filter: {len(candidates)} candidates")
 
     if dry_run:
-        logger.info("Dry run mode - skipping Claude API calls")
-        return [{"article": a.to_dict(), "summary": "(dry run)"} for a in filtered]
+        logger.info("Dry run mode - skipping Gemini API calls")
+        return [{"article": a.to_dict(), "summary": "(dry run)"} for a in candidates[:config.MAX_ARTICLES_TO_SUMMARIZE]]
 
-    summarized = summarize_batch(filtered)
+    # GeminiがAI編集長として最終5件を選定
+    selected = select_top_articles(candidates)
+    logger.info(f"Gemini selector: {len(selected)} articles selected for summarization")
+
+    summarized = summarize_batch(selected)
     return summarized
 
 

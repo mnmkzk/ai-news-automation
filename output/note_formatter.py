@@ -47,7 +47,7 @@ def generate_note_report(summarized: list[dict], target_date: date | None = None
         how = item.get("how_changes_life", "")
 
         if what:
-            lines.append(f"### これ、なに？")
+            lines.append(f"### ニュース要約")
             lines.append(what)
             lines.append("")
 
