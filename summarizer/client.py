@@ -56,6 +56,17 @@ def _parse_batch_response(text: str, articles: list[Article]) -> list[dict]:
         why_match = re.search(r"【何がすごいの？】(.+?)(?=\n【|$)", section, re.DOTALL)
         how_match = re.search(r"【あなたの生活・仕事はどう変わる？】(.+?)(?=\n【|$)", section, re.DOTALL)
 
+        missing = [
+            name for name, m in [
+                ("what_is_this", what_match),
+                ("why_amazing", why_match),
+                ("how_changes_life", how_match),
+            ] if not m
+        ]
+        if missing:
+            label = _clean_field(title_match.group(1))[:20] if title_match else f"記事{i + 1}"
+            logger.warning(f"[parse] セクション欠損 ({label}): {missing}")
+
         results.append({
             "article": article.to_dict() if article else {},
             "summary_title": _clean_field(title_match.group(1)) if title_match else "",

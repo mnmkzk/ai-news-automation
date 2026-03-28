@@ -17,7 +17,7 @@ GEMINI_API_KEY = os.getenv("GEMINI_API_KEY", "")
 
 # --- Gemini Settings ---
 GEMINI_MODEL = "gemini-2.5-flash"
-GEMINI_MAX_TOKENS = 4096
+GEMINI_MAX_TOKENS = 8192
 MAX_ARTICLES_PER_SOURCE = 10
 MAX_FILTER_CANDIDATES = 15      # ルールフィルタ後にGeminiに渡す候補数
 MAX_ARTICLES_TO_SUMMARIZE = 5   # Gemini選定後に要約する最終件数
